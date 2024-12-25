@@ -24,6 +24,10 @@ const edges = new THREE.EdgesGeometry(geometry, 1);
 const line = new THREE.LineSegments(edges, lineMat);
 scene.add(line);
 
+// Creating Group so that the countries can rotate together at the same time
+const globe = new THREE.Group();
+globe.add(line);
+scene.add(globe);
 
 fetch('./geojson/countries.json')
   .then(response => response.text())
@@ -36,11 +40,12 @@ fetch('./geojson/countries.json')
         color: 0xffffff,
       },
     });
-    scene.add(countries);
+    globe.add(countries);
   });
 
 function animate() {
   requestAnimationFrame(animate);
+  globe.rotation.y += 0.01;
   renderer.render(scene, camera);
   controls.update();
 }
