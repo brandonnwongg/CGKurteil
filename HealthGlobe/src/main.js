@@ -14,13 +14,13 @@ document.body.appendChild(renderer.domElement);
 const ctrls = new OrbitControls(camera, renderer.domElement);
 ctrls.enableDamping = true;
 
-// Basic Sphere Geometry for an Earth Globe Model
+// This gives a sort of 'skeletal' structure to the sphere
 const geometry = new THREE.SphereGeometry();
-const material = new THREE.MeshStandardMaterial({
-  color: 0x454B1B, //Hex Colour of Army Green
-});
-const sphere = new THREE.Mesh(geometry, material);
-scene.add(sphere);
+const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff});
+const edges = new THREE.EdgesGeometry(geometry, 0.5);
+const line = new THREE.LineSegments(edges, lineMaterial);
+scene.add(line);
+
 
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
 scene.add(hemiLight);
@@ -38,7 +38,7 @@ scene.add(gradientBackground);
 
 function animate() {
   requestAnimationFrame(animate);
-  sphere.rotation.y += 0.05;
+  //sphere.rotation.y += 0.05;
   renderer.render(scene, camera);
   ctrls.update();
 }
