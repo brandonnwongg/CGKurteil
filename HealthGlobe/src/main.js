@@ -19,26 +19,26 @@ const geometry = new THREE.SphereGeometry();
 const material = new THREE.MeshStandardMaterial({
   color: 0x454B1B, //Hex Colour of Army Green
 });
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
+const sphere = new THREE.Mesh(geometry, material);
+scene.add(sphere);
 
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
 scene.add(hemiLight);
 
 // Sprites BG
 const gradientBackground = getLayer({
-  hue: 0.9,
+  hue: 0.5,
   numSprites: 8,
   opacity: 0.2,
   radius: 10,
-  size: 30,
+  size: 24,
   z: -15.5,
 });
-//scene.add(gradientBackground);
+scene.add(gradientBackground);
 
 function animate() {
   requestAnimationFrame(animate);
-  cube.rotation.y += 0.05;
+  sphere.rotation.y += 0.05;
   renderer.render(scene, camera);
   ctrls.update();
 }
