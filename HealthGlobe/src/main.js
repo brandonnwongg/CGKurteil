@@ -15,9 +15,9 @@ const ctrls = new OrbitControls(camera, renderer.domElement);
 ctrls.enableDamping = true;
 
 // This gives a sort of 'skeletal' structure to the sphere
-const geometry = new THREE.SphereGeometry();
+const geometry = new THREE.SphereGeometry(2);
 const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff});
-const edges = new THREE.EdgesGeometry(geometry, 0.5);
+const edges = new THREE.EdgesGeometry(geometry, 1);
 const line = new THREE.LineSegments(edges, lineMaterial);
 scene.add(line);
 
@@ -38,7 +38,7 @@ scene.add(gradientBackground);
 
 function animate() {
   requestAnimationFrame(animate);
-  //sphere.rotation.y += 0.05;
+  line.rotation.y += 0.005;
   renderer.render(scene, camera);
   ctrls.update();
 }
