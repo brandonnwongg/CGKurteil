@@ -9,9 +9,10 @@ Iterates through the latitude and longitude values, converts the values to XYZ c
 and draws the geoJSON geometries.
 
 */
+const container = new THREE.Object3D();
 
 export function drawThreeGeo({ json, radius, materalOptions }) {
-  const container = new THREE.Object3D();
+  //const container = new THREE.Object3D();
   container.userData.update = (t) => {
     for (let i = 0; i < container.children.length; i++) {
       container.children[i].userData.update?.(t);
@@ -32,19 +33,6 @@ export function drawThreeGeo({ json, radius, materalOptions }) {
       convertToSphereCoords(json_geom[geom_num].coordinates, radius);
       drawParticle(x_values[0], y_values[0], z_values[0], materalOptions);
 
-    } else if (json_geom[geom_num].type == 'MultiPoint') {
-      for (let point_num = 0; point_num < json_geom[geom_num].coordinates.length; point_num++) {
-        convertToSphereCoords(json_geom[geom_num].coordinates[point_num], radius);
-        drawParticle(x_values[0], y_values[0], z_values[0], materalOptions);
-      }
-
-    } else if (json_geom[geom_num].type == 'LineString') {
-      coordinate_array = createCoordinateArray(json_geom[geom_num].coordinates);
-
-      for (let point_num = 0; point_num < coordinate_array.length; point_num++) {
-        convertToSphereCoords(coordinate_array[point_num], radius);
-      }
-      drawLine(x_values, y_values, z_values, materalOptions);
 
     } else if (json_geom[geom_num].type == 'Polygon') {
       for (let segment_num = 0; segment_num < json_geom[geom_num].coordinates.length; segment_num++) {
@@ -56,15 +44,6 @@ export function drawThreeGeo({ json, radius, materalOptions }) {
         drawLine(x_values, y_values, z_values, materalOptions);
       }
 
-    } else if (json_geom[geom_num].type == 'MultiLineString') {
-      for (let segment_num = 0; segment_num < json_geom[geom_num].coordinates.length; segment_num++) {
-        coordinate_array = createCoordinateArray(json_geom[geom_num].coordinates[segment_num]);
-
-        for (let point_num = 0; point_num < coordinate_array.length; point_num++) {
-          convertToSphereCoords(coordinate_array[point_num], radius);
-        }
-        drawLine(x_values, y_values, z_values, materalOptions);
-      }
 
     } else if (json_geom[geom_num].type == 'MultiPolygon') {
       for (let polygon_num = 0; polygon_num < json_geom[geom_num].coordinates.length; polygon_num++) {
@@ -190,20 +169,6 @@ export function drawThreeGeo({ json, radius, materalOptions }) {
     z_values.push(Math.sin(lat * Math.PI / 180) * sphere_radius);
   }
 
-  function drawParticle(x, y, z, options) {
-    let geo = new THREE.BufferGeometry();
-    geo.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute([x, y, z], 3)
-    );
-
-    const particle_material = new THREE.PointsMaterial(options);
-
-    const particle = new THREE.Points(particle_geom, particle_material);
-    container.add(particle);
-
-    clearArrays();
-  }
 
   function drawLine(x_values, y_values, z_values, options) {
     const lineGeo = new LineGeometry();
@@ -212,11 +177,6 @@ export function drawThreeGeo({ json, radius, materalOptions }) {
       verts.push(x_values[i], y_values[i], z_values[i]);
     }
     lineGeo.setPositions(verts);
-    let hue = 0.3 + Math.random() * 0.2;
-    if (Math.random() > 0.5) {
-      hue -= 0.3;
-    }
-    const color = new THREE.Color().setHSL(hue, 1.0, 0.5);
     const lineMaterial = new LineMaterial({
       color : 0xffffff,
       linewidth: 2,
@@ -229,6 +189,11 @@ export function drawThreeGeo({ json, radius, materalOptions }) {
     line.userData.update = (t) => {
       lineMaterial.dashOffset = t * rate;
     }
+
+    line.material.depthTest = false; // Ensure material supports raycasting
+    line.userData.isInteractive = true; 
+    line.material.transparent = true; // Optional, enables dashed or semi-transparent effects
+    line.material.opacity = 1.0;
     container.add(line);
 
     clearArrays();
@@ -242,3 +207,5 @@ export function drawThreeGeo({ json, radius, materalOptions }) {
 
   return container;
 }
+
+export { container };
