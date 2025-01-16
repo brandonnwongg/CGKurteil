@@ -25,15 +25,17 @@ fontLoader.load(
   './node_modules/three/examples/fonts/droid/droid_serif_regular.typeface.json',
   (droidFont) => {
     const textGeometry = new TextGeometry('Wonders of the World', {
-      height: 8,
+      depth: 7,
       size: 25,
-      font: droidFont,
+      font: droidFont, curveSegments: 5,
+      style: "normal",
     });
   const textMaterial = new THREE.MeshNormalMaterial();
-  const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+  var textMesh = new THREE.Mesh(textGeometry, textMaterial );
   textMesh.position.x = -180;
-  textMesh.position.y = 150;
-  scene.add(textMesh);
+  textMesh.position.y = 160;
+  textMesh.position.z = -30;
+  stars.add(textMesh);
   }
 ) 
 // Vertex Shader for Earth
