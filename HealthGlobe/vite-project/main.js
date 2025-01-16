@@ -153,7 +153,35 @@ const Globe = new ThreeGlobe()
   .arcDashAnimateTime(1000);
 
 sphere.add(Globe)
+
+var amb,textureLoader,textu,Earthmat,Earthgeo,icosaedron,markerInfo,gMarker,mMarker,markers;
+var markerCount=60;
+var dummy=[];
+var alvos=[];
+icosaedron=new THREE.Mesh(new THREE.IcosahedronGeometry(102,5),new THREE.MeshStandardMaterial({color:'#08b',wireframe:true}));
+sphere.add(icosaedron)
+
+markerInfo=[];
+	gMarker=new THREE.CircleGeometry(0.15,32);
+	mMarker=new THREE.MeshBasicMaterial({color: 0xcc00ff,});
+	mMarker.defines={ USE_UV: " " }; // needed to be set to be able to work with UVs
+	markers=new THREE.InstancedMesh(gMarker, mMarker, markerCount);
+
+	for (let i=0;i<markerCount;i++){
+		dummy[i]=new THREE.Mesh(new THREE.SphereGeometry(4,16,16),new THREE.MeshLambertMaterial({color:'red'}));
+		dummy[i].position.randomDirection().setLength(101);
+		dummy[i].updateMatrix();
+  		markers.setMatrixAt(i, dummy[i].matrix);
+			dummy[i].name="Id: "+i;
+			dummy[i].kx=dummy[i].position.clone().x;
+			dummy[i].ky=dummy[i].position.y;
+			dummy[i].kz=dummy[i].position.z;
+		alvos.push(dummy[i]);
+		sphere.add(dummy[i]);
+	}
+
 camera.position.z = 300
+
 
 const mouse = {
   x: undefined,
