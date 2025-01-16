@@ -143,7 +143,8 @@ const arcsData = [...Array(N).keys()].map(() => ({
 }));
 
 const Globe = new ThreeGlobe()
-  //globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+  .showGlobe(false)
+  .showAtmosphere(false)
   .arcsData(arcsData)
   .arcColor('color')
   .arcDashLength(1.5)
