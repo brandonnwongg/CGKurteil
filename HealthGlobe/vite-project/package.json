@@ -4,6 +4,7 @@
     "vite-plugin-string": "^1.2.3"
   },
   "dependencies": {
-    "gsap": "^3.12.5"
+    "gsap": "^3.12.5",
+    "three-globe": "^2.40.2"
   }
 }

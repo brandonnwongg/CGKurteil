@@ -1,5 +1,9 @@
 import * as THREE from "three";
 import gsap from "./node_modules/gsap/index.js";
+import pullRequestData from './src/lines.js';
+import maps from "./src/map.js";
+import ThreeGlobe from 'https://esm.sh/three-globe?external=three';
+
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(
@@ -71,7 +75,7 @@ document.body.appendChild(renderer.
 
 // Creating a sphere
 const sphere = new THREE.Mesh(
-  new THREE.SphereGeometry(5, 50, 50),
+  new THREE.SphereGeometry(101, 50, 50),
   new THREE.ShaderMaterial({
     //Loads Texture on Sphere
     vertexShader,
@@ -87,7 +91,7 @@ const sphere = new THREE.Mesh(
 
 // Creating a atmosphere
 const atmosphere = new THREE.Mesh(
-  new THREE.SphereGeometry(6, 50, 50),
+  new THREE.SphereGeometry(125, 50, 50),
   new THREE.ShaderMaterial({
     //Loads Texture on Sphere
     vertexShader: vertexShaderAtmosphere,
@@ -96,8 +100,6 @@ const atmosphere = new THREE.Mesh(
     side: THREE.BackSide
   })
 )
-
-atmosphere.scale.set(1.1, 1.1, 1.1)
 
 scene.add(atmosphere)
 
@@ -130,7 +132,27 @@ const stars = new THREE.Points(
   starGeometry, starMaterial)
 scene.add(stars)
 
-camera.position.z = 15
+const N = 30;
+
+const arcsData = [...Array(N).keys()].map(() => ({
+  startLat: (Math.random() - 0.5) * 180,
+  startLng: (Math.random() - 0.5) * 360,
+  endLat: (Math.random() - 0.5) * 180,
+  endLng: (Math.random() - 0.5) * 360,
+  color: ['brown', 'white', 'blue', 'green'][Math.round(Math.random() * 3)]
+}));
+
+const Globe = new ThreeGlobe()
+  //globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+  .arcsData(arcsData)
+  .arcColor('color')
+  .arcDashLength(1.5)
+  .arcDashGap(4)
+  .arcDashInitialGap(() => Math.random() * 5)
+  .arcDashAnimateTime(1000);
+
+sphere.add(Globe)
+camera.position.z = 300
 
 const mouse = {
   x: undefined,
@@ -138,7 +160,7 @@ const mouse = {
 }
 
 function animate() {
-  requestAnimationFrame(animate)
+  // requestAnimationFrame(animate)
   renderer.render(scene, camera)
   sphere.rotation.y += 0.001
   gsap.to(group.rotation, {
@@ -146,6 +168,12 @@ function animate() {
     y: mouse.x * 0.5,
     duration: 2
   })
+  gsap.to(stars.rotation, {
+    x: -mouse.y * 0.2,
+    y: mouse.x * 0.2,
+    duration: 2
+  })
+  requestAnimationFrame(animate)
 }
 animate()
 
