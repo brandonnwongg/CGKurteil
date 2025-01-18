@@ -2,21 +2,31 @@ import * as THREE from "three";
 import { OrbitControls } from 'jsm/controls/OrbitControls.js';
 import { drawThreeGeo, container } from "./src/threeGeoJSON.js";
 
+
 const w = window.innerWidth;
 const h = window.innerHeight;
 
 // Scene, Camera, Renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, w / h, 1, 100);
-camera.position.z = 6;
+camera.position.z = 10;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(w, h);
+let renderer = new THREE.WebGLRenderer({
+  
+  antialias: true
+});
+renderer.setPixelRatio(window.devicePixelRatio)
+renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+controls.enablePan = false;
+controls.minDistance = 7;
+controls.maxDistance = 7;
+controls.enableDamping = false;
+controls.autoRotate = true;
+controls.autoRotateSpeed *= 0.25;
 
 // Vertex Shader for Earth
 const vertexShader = `
@@ -57,8 +67,8 @@ const vertexShaderAtmosphere = `
     }
 `;
 
-// Fragment Shader for Atmospshere
-const fragmentShaderAtmosphere = `
+// Fragment Shader for Day Atmospshere
+const fragmentDayShaderAtmosphere = `
     varying vec3 vertexNormal;
 
     void main() {
@@ -67,10 +77,22 @@ const fragmentShaderAtmosphere = `
         gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
     }
 `;
+// Fragment Shader for Night Atmospshere
+const fragmentNightShaderAtmosphere = `
+    varying vec3 vertexNormal;
+
+    void main() {
+        float intensity = pow(0.4 - dot(vertexNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+
+        gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0) * intensity;
+    }
+`;
 
 
-////----------Creating an earth globe using custom shaders-----------/////
-const sphere = new THREE.Mesh(
+
+
+////----------Creating an day earth globe using custom shaders-----------/////
+const daySphere = new THREE.Mesh(
   new THREE.SphereGeometry(2.5, 50, 50),
   new THREE.ShaderMaterial({
     //Loads Texture on Sphere
@@ -84,19 +106,46 @@ const sphere = new THREE.Mesh(
   })
 )
 
-////----------Creating an atmosphere using custom shaders-----------/////
-const atmosphere = new THREE.Mesh(
-  new THREE.SphereGeometry(3.5, 50, 50),
+////----------Creating an night earth globe using custom shaders-----------/////
+const nightSphere = new THREE.Mesh(
+  new THREE.SphereGeometry(2.5, 50, 50),
+  new THREE.ShaderMaterial({
+    //Loads Texture on Sphere
+    vertexShader,
+    fragmentShader,
+    uniforms: {
+      globeTexture: {
+        value: new THREE.TextureLoader().load("//unpkg.com/three-globe/example/img/earth-night.jpg")
+      }
+    }
+  })
+)
+
+////----------Creating an day atmosphere using custom shaders-----------/////
+const dayAtmosphere = new THREE.Mesh(
+  new THREE.SphereGeometry(3.2, 50, 50),
   new THREE.ShaderMaterial({
     //Loads Texture on Sphere
     vertexShader: vertexShaderAtmosphere,
-    fragmentShader: fragmentShaderAtmosphere,
+    fragmentShader: fragmentDayShaderAtmosphere,
     blending: THREE.AdditiveBlending,
     side: THREE.BackSide
   })
 )
 
-scene.add(atmosphere)
+////----------Creating an night atmosphere using custom shaders-----------/////
+const nightAtmosphere = new THREE.Mesh(
+  new THREE.SphereGeometry(3.2, 50, 50),
+  new THREE.ShaderMaterial({
+    //Loads Texture on Sphere
+    vertexShader: vertexShaderAtmosphere,
+    fragmentShader: fragmentNightShaderAtmosphere,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide
+  })
+)
+
+
 
 // Globe Geometry
 const geometry = new THREE.SphereGeometry(2.5, 64, 64);
@@ -112,26 +161,20 @@ const line = new THREE.LineSegments(edges, lineMat);
 const globe = new THREE.Group();
 //globe.add(line);
 scene.add(globe);
-globe.add(sphere);
-// // Halo (Glowing Effect Around Globe)
-// function createHalo() {
-//   const haloGeometry = new THREE.SphereGeometry(2.6, 64, 64);
-//   const haloMaterial = new THREE.MeshBasicMaterial({
-//     color: 0x00aaff,
-//     transparent: true,
-//     opacity: 0.15,
-//   });
-//   const halo = new THREE.Mesh(haloGeometry, haloMaterial);
-//   scene.add(halo);
-// }
-// createHalo();
+globe.add(dayAtmosphere)
+globe.add(daySphere);
 
 // Background: Space Texture
 const loader = new THREE.TextureLoader();
-const dayTexture = loader.load('./src/space1.png'); // Texture pour le mode clair
-const nightTexture = loader.load('./src/star1.jpg'); // Texture pour le mode nuit
-
-scene.background = dayTexture; 
+// const dayTexture1 = loader.load('./src/space1.png'); // Texture pour le mode clair
+// const nightTexture = loader.load("//unpkg.com/three-globe/example/img/earth-night.jpg"); // Texture pour le mode nuit
+const texture = loader.load(
+  'https://cdn.glitch.com/0f2dd307-0d28-4fe9-9ef9-db84277033dd%2Fhdr3.png?v=1620582677695',
+  () => {
+    const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+    rt.fromEquirectangularTexture(renderer, texture);
+    scene.background = rt.texture;
+  });
 
 // Mode Button
 const toggleButton = document.getElementById('toggleMode');
@@ -140,14 +183,21 @@ let isNightMode = false; // default mode day mode
 toggleButton.addEventListener('click', () => {
  
   if (isNightMode) {
-    scene.background = dayTexture;
+    globe.remove(nightSphere);
+    globe.add(daySphere);
+    globe.remove(nightAtmosphere);
+    globe.add(dayAtmosphere);
     toggleButton.innerText = 'Night Mode';
   } else {
-    scene.background = nightTexture;
+    globe.remove(daySphere)
+    globe.add(nightSphere);
+    globe.remove(dayAtmosphere);
+    globe.add(nightAtmosphere);
     toggleButton.innerText = 'Day Mode';
   }
   isNightMode = !isNightMode; // change Mode
 });
+
 
 // Adding Stars
 function addStars() {
@@ -234,7 +284,36 @@ fetch('./geojson/countries.json')
         color: 0xffffff,
       },
     });
-    //globe.add(countries); ////////////////////////
+    const toggleWireframeButton= document.getElementById('toggleWireframe');
+    let isWireframe = false; // default mode day mode
+
+    toggleWireframeButton.addEventListener('click', () => {
+    
+      if (isWireframe) {
+        if(isNightMode){
+          globe.remove(nightSphere);
+          globe.remove(nightAtmosphere);
+        } else {
+        globe.remove(daySphere);
+        globe.remove(dayAtmosphere);
+        }
+        globe.add(line);
+        globe.add(countries);
+        toggleWireframeButton.innerText = 'Wireframe : ON';
+      } else {
+        if(isNightMode){
+          globe.add(nightSphere);
+          globe.add(nightAtmosphere);
+        } else {
+        globe.add(daySphere);
+        globe.add(dayAtmosphere);
+        }
+        globe.remove(line);
+        globe.remove(countries);
+        toggleWireframeButton.innerText = 'Wireframe : OFF';
+      }
+      isWireframe = !isWireframe; // change Mode
+    });
 
    // Loop through the GeoJSON features and add poles
     data.features.forEach(feature => {
@@ -328,8 +407,6 @@ let isPaused = false; // Rotation paused or not
 
 // Animation Loop
 function animate() {
-  requestAnimationFrame(animate);
-
   if (!isPaused) {
     globe.rotation.y += rotationSpeed;
   }
@@ -343,6 +420,7 @@ function animate() {
 
   renderer.render(scene, camera);
   controls.update();
+  requestAnimationFrame(animate);
 }
 animate();
 
@@ -367,14 +445,14 @@ controlsDiv.style.color = 'white';
 document.body.appendChild(controlsDiv);
 
 // Pause/Play Button
-const pausePlayButton = document.createElement('button');
-pausePlayButton.innerText = 'Pause';
-pausePlayButton.style.marginRight = '10px';
-pausePlayButton.onclick = () => {
-  isPaused = !isPaused;
-  pausePlayButton.innerText = isPaused ? 'Play' : 'Pause';
-};
-controlsDiv.appendChild(pausePlayButton);
+// const pausePlayButton = document.createElement('button');
+// pausePlayButton.innerText = 'Pause';
+// pausePlayButton.style.marginRight = '10px';
+// pausePlayButton.onclick = () => {
+//   isPaused = !isPaused;
+//   pausePlayButton.innerText = isPaused ? 'Play' : 'Pause';
+// };
+// controlsDiv.appendChild(pausePlayButton);
 
 // Speed Slider
 const speedLabel = document.createElement('label');
@@ -384,7 +462,7 @@ controlsDiv.appendChild(speedLabel);
 const speedSlider = document.createElement('input');
 speedSlider.type = 'range';
 speedSlider.min = '0.001';
-speedSlider.max = '0.08';
+speedSlider.max = '0.01';
 speedSlider.step = '0.003';
 speedSlider.value = rotationSpeed;
 speedSlider.oninput = (e) => {
