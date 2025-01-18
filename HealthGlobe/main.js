@@ -1,18 +1,18 @@
 import * as THREE from "three";
 import { OrbitControls } from 'jsm/controls/OrbitControls.js';
 import { drawThreeGeo, container } from "./src/threeGeoJSON.js";
-
+import { CSS2DRenderer, CSS2DObject } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/renderers/CSS2DRenderer.js';
 
 const w = window.innerWidth;
 const h = window.innerHeight;
 
 // Scene, Camera, Renderer
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, w / h, 1, 100);
-camera.position.z = 10;
+let camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 2000);
+//camera.position.z = 10;
+camera.position.set(20, 0.5, 15).setLength(20);
 
 let renderer = new THREE.WebGLRenderer({
-  
   antialias: true
 });
 renderer.setPixelRatio(window.devicePixelRatio)
@@ -22,9 +22,9 @@ document.body.appendChild(renderer.domElement);
 // Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = false;
-controls.minDistance = 7;
-controls.maxDistance = 7;
-controls.enableDamping = false;
+controls.minDistance = 8;
+controls.maxDistance = 11;
+controls.enableDamping = true;
 controls.autoRotate = true;
 controls.autoRotateSpeed *= 0.25;
 
@@ -123,13 +123,14 @@ const nightSphere = new THREE.Mesh(
 
 ////----------Creating an day atmosphere using custom shaders-----------/////
 const dayAtmosphere = new THREE.Mesh(
-  new THREE.SphereGeometry(3.2, 50, 50),
+  new THREE.SphereGeometry(3.0, 50, 50),
   new THREE.ShaderMaterial({
     //Loads Texture on Sphere
     vertexShader: vertexShaderAtmosphere,
     fragmentShader: fragmentDayShaderAtmosphere,
     blending: THREE.AdditiveBlending,
-    side: THREE.BackSide
+    side: THREE.BackSide,
+
   })
 )
 
@@ -144,7 +145,6 @@ const nightAtmosphere = new THREE.Mesh(
     side: THREE.BackSide
   })
 )
-
 
 
 // Globe Geometry
@@ -251,7 +251,11 @@ function addPole(lat, lon, radius, countryCode) {
   const end = latLonToVector3(lat, lon, radius + poleHeight); // End position above the surface
 
   const poleGeometry = new THREE.CylinderGeometry(poleRadius, poleRadius, poleHeight, 8);
-  const poleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Green color
+  const poleMaterial = new THREE.MeshBasicMaterial({ 
+    color: 0x00ff00,   // Green color
+    transparent: true, // Enable transparency
+    opacity: 0.3  
+  }); // Green color
 
   const pole = new THREE.Mesh(poleGeometry, poleMaterial);
 
@@ -266,10 +270,22 @@ function addPole(lat, lon, radius, countryCode) {
   // Add userData for interaction
   pole.userData = { isoCode: countryCode };
   interactiveObjects.push(pole);
-
   globe.add(pole);
-}
 
+  const toggleCovid= document.getElementById('toggleCovid');
+  let covidData = true; 
+
+  toggleCovid.addEventListener('click', () => {
+    if (covidData) {
+      globe.add(pole);
+      toggleCovid.innerText = 'Covid Data : ON';
+    } else {
+      globe.remove(pole);
+      toggleCovid.innerText = 'Covid Data: OFF';
+    }
+    covidData = !covidData; // change Mode
+  });
+}
 // Fetch GeoJSON Data
 fetch('./geojson/countries.json')
   .then(response => response.text())
@@ -427,9 +443,9 @@ animate();
 
 // Handle Window Resize
 function handleWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(innerWidth, innerHeight);
 }
 window.addEventListener('resize', handleWindowResize, false);
 
