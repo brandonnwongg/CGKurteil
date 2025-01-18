@@ -8,7 +8,7 @@ const h = window.innerHeight;
 // Scene, Camera, Renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, w / h, 1, 100);
-camera.position.z = 5;
+camera.position.z = 6;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(w, h);
@@ -18,9 +18,85 @@ document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-// Raycaster for interactivity
-//const raycaster = new THREE.Raycaster();
-//const mouse = new THREE.Vector2();
+// Vertex Shader for Earth
+const vertexShader = `
+    varying vec2 vertexUV;
+    varying vec3 vertexNormal;
+
+    void main() {
+      vertexUV = uv;
+      vertexNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix
+        * vec4(position, 1.0);
+    }
+`;
+
+// Fragment Shader for Earth
+const fragmentShader = `
+    uniform sampler2D globeTexture;
+    varying vec2 vertexUV;
+    varying vec3 vertexNormal;
+
+    void main() {
+        float intensity = 1.05 - dot(vertexNormal, vec3(0.0, 0.0, 1.0));
+        vec3 atmosphere = vec3(0.3, 0.6, 1.0) * pow(intensity, 1.5);
+
+        gl_FragColor = vec4(atmosphere + texture2D(globeTexture, vertexUV).xyz, 1.0);
+    }
+`;
+
+
+// Vertex Shader for Atmosphere
+const vertexShaderAtmosphere = `
+    varying vec3 vertexNormal;
+
+    void main() {
+      vertexNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix
+        * vec4(position, 1.0);
+    }
+`;
+
+// Fragment Shader for Atmospshere
+const fragmentShaderAtmosphere = `
+    varying vec3 vertexNormal;
+
+    void main() {
+        float intensity = pow(0.55 - dot(vertexNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+
+        gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
+    }
+`;
+
+
+////----------Creating an earth globe using custom shaders-----------/////
+const sphere = new THREE.Mesh(
+  new THREE.SphereGeometry(2.5, 50, 50),
+  new THREE.ShaderMaterial({
+    //Loads Texture on Sphere
+    vertexShader,
+    fragmentShader,
+    uniforms: {
+      globeTexture: {
+        value: new THREE.TextureLoader().load("./src/globe.jpg")
+      }
+    }
+  })
+)
+
+////----------Creating an atmosphere using custom shaders-----------/////
+const atmosphere = new THREE.Mesh(
+  new THREE.SphereGeometry(3.5, 50, 50),
+  new THREE.ShaderMaterial({
+    //Loads Texture on Sphere
+    vertexShader: vertexShaderAtmosphere,
+    fragmentShader: fragmentShaderAtmosphere,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide
+  })
+)
+
+scene.add(atmosphere)
 
 // Globe Geometry
 const geometry = new THREE.SphereGeometry(2.5, 64, 64);
@@ -34,21 +110,21 @@ const line = new THREE.LineSegments(edges, lineMat);
 
 // Group for rotating globe
 const globe = new THREE.Group();
-globe.add(line);
+//globe.add(line);
 scene.add(globe);
-
-// Halo (Glowing Effect Around Globe)
-function createHalo() {
-  const haloGeometry = new THREE.SphereGeometry(2.6, 64, 64);
-  const haloMaterial = new THREE.MeshBasicMaterial({
-    color: 0x00aaff,
-    transparent: true,
-    opacity: 0.15,
-  });
-  const halo = new THREE.Mesh(haloGeometry, haloMaterial);
-  scene.add(halo);
-}
-createHalo();
+globe.add(sphere);
+// // Halo (Glowing Effect Around Globe)
+// function createHalo() {
+//   const haloGeometry = new THREE.SphereGeometry(2.6, 64, 64);
+//   const haloMaterial = new THREE.MeshBasicMaterial({
+//     color: 0x00aaff,
+//     transparent: true,
+//     opacity: 0.15,
+//   });
+//   const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+//   scene.add(halo);
+// }
+// createHalo();
 
 // Background: Space Texture
 const loader = new THREE.TextureLoader();
@@ -65,7 +141,7 @@ toggleButton.addEventListener('click', () => {
  
   if (isNightMode) {
     scene.background = dayTexture;
-    toggleButton.innerText = 'Nigth Mode';
+    toggleButton.innerText = 'Night Mode';
   } else {
     scene.background = nightTexture;
     toggleButton.innerText = 'Day Mode';
@@ -158,7 +234,7 @@ fetch('./geojson/countries.json')
         color: 0xffffff,
       },
     });
-    globe.add(countries);
+    //globe.add(countries); ////////////////////////
 
    // Loop through the GeoJSON features and add poles
     data.features.forEach(feature => {
@@ -189,7 +265,7 @@ fetch('./geojson/countries.json')
     });
   });
 
-  // Fetch COVID-19 data for a specific country
+// Fetch COVID-19 data for a specific country
 function fetchCovidData(isoCode) {
   return fetch(`https://disease.sh/v3/covid-19/countries/${isoCode}`)
     .then(response => response.json())
@@ -247,7 +323,7 @@ window.addEventListener('mousemove', (event) => {
 });
 
 // Rotation and Animation Variables
-let rotationSpeed = 0.001; // Default rotation speed
+let rotationSpeed = 0.0005; // Default rotation speed
 let isPaused = false; // Rotation paused or not
 
 // Animation Loop
@@ -269,7 +345,6 @@ function animate() {
   controls.update();
 }
 animate();
-
 
 
 // Handle Window Resize
