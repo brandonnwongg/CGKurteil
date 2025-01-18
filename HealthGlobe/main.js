@@ -3,8 +3,7 @@ import { OrbitControls } from 'jsm/controls/OrbitControls.js';
 import { drawThreeGeo, container } from "./src/threeGeoJSON.js";
 import { CSS2DRenderer, CSS2DObject } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/renderers/CSS2DRenderer.js';
 
-const w = window.innerWidth;
-const h = window.innerHeight;
+
 
 // Scene, Camera, Renderer
 const scene = new THREE.Scene();
@@ -164,17 +163,21 @@ scene.add(globe);
 globe.add(dayAtmosphere)
 globe.add(daySphere);
 
+
 // Background: Space Texture
 const loader = new THREE.TextureLoader();
 // const dayTexture1 = loader.load('./src/space1.png'); // Texture pour le mode clair
 // const nightTexture = loader.load("//unpkg.com/three-globe/example/img/earth-night.jpg"); // Texture pour le mode nuit
-const texture = loader.load(
+const texture1 = loader.load(
   'https://cdn.glitch.com/0f2dd307-0d28-4fe9-9ef9-db84277033dd%2Fhdr3.png?v=1620582677695',
   () => {
-    const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
-    rt.fromEquirectangularTexture(renderer, texture);
+    const rt = new THREE.WebGLCubeRenderTarget(texture1.image.height);
+    texture1.colorSpace = THREE.SRGBColorSpace;
+    rt.fromEquirectangularTexture(renderer, texture1);
     scene.background = rt.texture;
   });
+
+
 
 // Mode Button
 const toggleButton = document.getElementById('toggleMode');
@@ -189,7 +192,7 @@ toggleButton.addEventListener('click', () => {
     globe.add(dayAtmosphere);
     toggleButton.innerText = 'Night Mode';
   } else {
-    globe.remove(daySphere)
+    globe.remove(daySphere);
     globe.add(nightSphere);
     globe.remove(dayAtmosphere);
     globe.add(nightAtmosphere);
@@ -421,7 +424,7 @@ window.addEventListener('mousemove', (event) => {
 let rotationSpeed = 0.0005; // Default rotation speed
 let isPaused = false; // Rotation paused or not
 
-// Animation Loop
+//Animation Loop
 function animate() {
   if (!isPaused) {
     globe.rotation.y += rotationSpeed;
