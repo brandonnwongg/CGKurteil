@@ -247,7 +247,7 @@ function latLonToVector3(lat, lon, radius) {
 
 // Function to add a green pole at a given position
 function addPole(lat, lon, radius, countryCode) {
-  const poleHeight = 0.5; // Length of the pole
+  const poleHeight = 0.6; // Length of the pole
   const poleRadius = 0.02; // Thickness of the pole
 
   const start = latLonToVector3(lat, lon, radius); // Start position on the surface
@@ -257,7 +257,7 @@ function addPole(lat, lon, radius, countryCode) {
   const poleMaterial = new THREE.MeshBasicMaterial({ 
     color: 0x00ff00,   // Green color
     transparent: true, // Enable transparency
-    opacity: 0.3  
+    opacity: 0.5 
   }); // Green color
 
   const pole = new THREE.Mesh(poleGeometry, poleMaterial);
@@ -421,7 +421,7 @@ window.addEventListener('mousemove', (event) => {
 });
 
 // Rotation and Animation Variables
-let rotationSpeed = 0.0005; // Default rotation speed
+let rotationSpeed = 0.001; // Default rotation speed
 let isPaused = false; // Rotation paused or not
 
 //Animation Loop
@@ -433,7 +433,7 @@ function animate() {
   // Rotate stars for a dynamic background
   scene.children.forEach((child) => {
     if (child.isPoints) {
-      child.rotation.y += 0.0005;
+      child.rotation.y += 0.001;
     }
   });
 
@@ -464,14 +464,15 @@ controlsDiv.style.color = 'white';
 document.body.appendChild(controlsDiv);
 
 // Pause/Play Button
-// const pausePlayButton = document.createElement('button');
-// pausePlayButton.innerText = 'Pause';
-// pausePlayButton.style.marginRight = '10px';
-// pausePlayButton.onclick = () => {
-//   isPaused = !isPaused;
-//   pausePlayButton.innerText = isPaused ? 'Play' : 'Pause';
-// };
-// controlsDiv.appendChild(pausePlayButton);
+ const pausePlayButton = document.createElement('button');
+ pausePlayButton.innerText = 'Pause';
+ pausePlayButton.style.marginRight = '10px';
+ pausePlayButton.onclick = () => {
+   isPaused = !isPaused;
+   pausePlayButton.innerText = isPaused ? 'Play' : 'Pause';
+   controls.autoRotate = !isPaused;
+ };
+ controlsDiv.appendChild(pausePlayButton);
 
 // Speed Slider
 const speedLabel = document.createElement('label');
